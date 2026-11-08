@@ -18,8 +18,8 @@ object PluginRegistry {
         PluginDefinition(
             id = "player_controls",
             title = "Дополнительные настройки плеера",
-            description = "Заготовка для локальных настроек воспроизведения.",
-            implemented = false
+            description = "Локальный видеоплеер: скорость, повтор, таймер и выбор видео или ссылки.",
+            implemented = true
         ),
         PluginDefinition(
             id = "content_filter",
