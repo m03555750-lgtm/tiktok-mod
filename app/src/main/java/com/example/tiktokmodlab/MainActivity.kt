@@ -17,6 +17,7 @@ import android.widget.Toast
 class MainActivity : Activity() {
     private lateinit var pluginManager: PluginManager
     private lateinit var contentFilter: ContentFilterStore
+    private lateinit var saveHelper: SaveHelperStore
     private lateinit var root: LinearLayout
     private lateinit var title: TextView
     private lateinit var status: TextView
@@ -25,6 +26,7 @@ class MainActivity : Activity() {
         super.onCreate(savedInstanceState)
         pluginManager = PluginManager(this)
         contentFilter = ContentFilterStore(this)
+        saveHelper = SaveHelperStore(this)
 
         root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -107,6 +109,14 @@ class MainActivity : Activity() {
                 val configureButton = Button(this).apply {
                     text = "Настроить фильтр"
                     setOnClickListener { showContentFilterDialog() }
+                }
+                card.addView(configureButton)
+            }
+
+            if (plugin.id == "save_helper") {
+                val configureButton = Button(this).apply {
+                    text = "Открыть сохранённое"
+                    setOnClickListener { showSaveHelperDialog() }
                 }
                 card.addView(configureButton)
             }
@@ -205,6 +215,99 @@ class MainActivity : Activity() {
                 ).show()
             }
             .setNegativeButton("Закрыть", null)
+            .show()
+    }
+
+
+    private fun showSaveHelperDialog() {
+        val content = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(24, 8, 24, 0)
+        }
+
+        val urlInput = EditText(this).apply {
+            hint = "Ссылка на видео (https://...)"
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_URI
+        }
+        content.addView(urlInput)
+
+        val noteInput = EditText(this).apply {
+            hint = "Заметка (необязательно)"
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
+        }
+        content.addView(noteInput)
+
+        val addButton = Button(this).apply { text = "Сохранить ссылку" }
+        content.addView(addButton)
+
+        val listTitle = TextView(this).apply {
+            text = "Сохранённые ссылки"
+            textSize = 16f
+            setPadding(0, 16, 0, 8)
+        }
+        content.addView(listTitle)
+
+        val entries = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+        }
+        content.addView(entries)
+
+        fun refreshList() {
+            entries.removeAllViews()
+            val items = saveHelper.all()
+            if (items.isEmpty()) {
+                entries.addView(TextView(this).apply {
+                    text = "Пока ничего не сохранено."
+                    textSize = 14f
+                })
+            } else {
+                items.forEachIndexed { index, item ->
+                    val row = LinearLayout(this).apply {
+                        orientation = LinearLayout.VERTICAL
+                        setPadding(0, 8, 0, 8)
+                    }
+                    row.addView(TextView(this).apply {
+                        text = item.url
+                        textSize = 14f
+                        setTextColor(0xFF8FCBFF.toInt())
+                    })
+                    if (item.note.isNotBlank()) {
+                        row.addView(TextView(this).apply {
+                            text = item.note
+                            textSize = 13f
+                        })
+                    }
+                    row.addView(Button(this).apply {
+                        text = "Удалить"
+                        setOnClickListener {
+                            saveHelper.remove(index)
+                            refreshList()
+                        }
+                    })
+                    entries.addView(row)
+                }
+            }
+        }
+
+        addButton.setOnClickListener {
+            val url = urlInput.text.toString().trim()
+            if (!(url.startsWith("https://") || url.startsWith("http://"))) {
+                Toast.makeText(this, "Введи корректную ссылку, начинающуюся с http:// или https://", Toast.LENGTH_LONG).show()
+            } else {
+                saveHelper.add(url, noteInput.text.toString())
+                urlInput.text.clear()
+                noteInput.text.clear()
+                refreshList()
+                Toast.makeText(this, "Ссылка сохранена", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        refreshList()
+        val scroll = ScrollView(this).apply { addView(content) }
+        AlertDialog.Builder(this)
+            .setTitle("Помощник сохранения")
+            .setView(scroll)
+            .setPositiveButton("Готово", null)
             .show()
     }
 
