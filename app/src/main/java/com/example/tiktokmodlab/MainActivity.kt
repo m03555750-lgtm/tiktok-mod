@@ -10,35 +10,22 @@ import android.widget.Switch
 import android.widget.TextView
 import android.widget.Toast
 
-data class Plugin(
-    val id: String,
-    val title: String,
-    val description: String
-)
-
 class MainActivity : Activity() {
-    private val plugins = listOf(
-        Plugin("player_controls", "Дополнительные настройки плеера", "Раздел для будущих локальных настроек воспроизведения."),
-        Plugin("content_filter", "Фильтр контента", "Заготовка для пользовательских фильтров контента."),
-        Plugin("save_helper", "Помощник сохранения", "Подсказки о доступных и разрешённых способах сохранения."),
-        Plugin("theme", "Оформление", "Настройки внешнего вида TikTok Mod Lab.")
-    )
-
-    private val preferences by lazy {
-        getSharedPreferences("plugin_settings", MODE_PRIVATE)
-    }
+    private lateinit var pluginManager: PluginManager
+    private lateinit var root: LinearLayout
+    private lateinit var title: TextView
     private lateinit var status: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        pluginManager = PluginManager(this)
 
-        val root = LinearLayout(this).apply {
+        root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(24, 32, 24, 24)
-            setBackgroundColor(0xFF101014.toInt())
         }
 
-        val title = TextView(this).apply {
+        title = TextView(this).apply {
             text = "TikTok Mod Lab"
             textSize = 26f
             setTextColor(0xFFFFFFFF.toInt())
@@ -47,7 +34,7 @@ class MainActivity : Activity() {
         root.addView(title)
 
         val subtitle = TextView(this).apply {
-            text = "Личная лаборатория плагинов · версия 0.2.0"
+            text = "Личная лаборатория плагинов · версия 0.3.0"
             textSize = 14f
             setTextColor(0xFFB8B8C2.toInt())
             setPadding(0, 8, 0, 12)
@@ -62,7 +49,7 @@ class MainActivity : Activity() {
         root.addView(status)
 
         val warning = TextView(this).apply {
-            text = "Это отдельное приложение-компаньон. Переключатели сохраняют настройки внутри Mod Lab и пока не изменяют официальный TikTok."
+            text = "Это отдельное приложение-компаньон. Плагины работают внутри Mod Lab и не изменяют официальный TikTok."
             textSize = 14f
             setTextColor(0xFFFFD27A.toInt())
             setPadding(14, 14, 14, 14)
@@ -76,7 +63,7 @@ class MainActivity : Activity() {
             setPadding(0, 18, 0, 0)
         }
 
-        plugins.forEach { plugin ->
+        pluginManager.plugins.forEach { plugin ->
             val card = LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
                 setPadding(16, 14, 16, 14)
@@ -87,15 +74,17 @@ class MainActivity : Activity() {
                 text = plugin.title
                 textSize = 17f
                 setTextColor(0xFFFFFFFF.toInt())
-                isChecked = preferences.getBoolean(plugin.id, false)
+                isChecked = pluginManager.isEnabled(plugin.id)
                 setOnCheckedChangeListener { _, checked ->
-                    preferences.edit().putBoolean(plugin.id, checked).apply()
+                    pluginManager.setEnabled(plugin.id, checked)
                     updateStatus()
-                    Toast.makeText(
-                        this@MainActivity,
-                        if (checked) "Настройка включена и сохранена" else "Настройка выключена и сохранена",
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    applyTheme()
+                    val message = if (checked) {
+                        if (plugin.implemented) "Плагин включён" else "Заготовка включена"
+                    } else {
+                        "Плагин выключен"
+                    }
+                    Toast.makeText(this@MainActivity, message, Toast.LENGTH_SHORT).show()
                 }
             }
             card.addView(toggle)
@@ -107,6 +96,16 @@ class MainActivity : Activity() {
                 setPadding(0, 6, 0, 0)
             }
             card.addView(description)
+
+            if (!plugin.implemented) {
+                val badge = TextView(this).apply {
+                    text = "СКОРО"
+                    textSize = 10f
+                    setTextColor(0xFFFFD27A.toInt())
+                    setPadding(0, 8, 0, 0)
+                }
+                card.addView(badge)
+            }
 
             val params = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
@@ -127,10 +126,21 @@ class MainActivity : Activity() {
 
         setContentView(root)
         updateStatus()
+        applyTheme()
     }
 
     private fun updateStatus() {
-        val enabledCount = plugins.count { preferences.getBoolean(it.id, false) }
-        status.text = "Плагины включены: $enabledCount из ${plugins.size}"
+        status.text = "Плагины включены: ${pluginManager.enabledCount()} из ${pluginManager.plugins.size}"
+    }
+
+    /** The first working plugin changes the appearance of Mod Lab itself. */
+    private fun applyTheme() {
+        val alternativeThemeEnabled = pluginManager.isEnabled("theme")
+        root.setBackgroundColor(
+            if (alternativeThemeEnabled) 0xFF21152F.toInt() else 0xFF101014.toInt()
+        )
+        title.setTextColor(
+            if (alternativeThemeEnabled) 0xFFD7B8FF.toInt() else 0xFFFFFFFF.toInt()
+        )
     }
 }
