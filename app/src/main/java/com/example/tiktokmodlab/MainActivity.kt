@@ -45,7 +45,7 @@ class MainActivity : Activity() {
         root.addView(title)
 
         val subtitle = TextView(this).apply {
-            text = "Личная лаборатория плагинов · версия 0.6.0"
+            text = "Личная лаборатория плагинов · версия 0.7.0"
             textSize = 14f
             setTextColor(0xFFB8B8C2.toInt())
             setPadding(0, 8, 0, 12)
@@ -107,6 +107,13 @@ class MainActivity : Activity() {
                 setPadding(0, 6, 0, 0)
             }
             card.addView(description)
+
+            if (plugin.id == "player_controls") {
+                card.addView(Button(this).apply {
+                    text = "Открыть видеоплеер"
+                    setOnClickListener { startActivity(Intent(this@MainActivity, PlayerActivity::class.java)) }
+                })
+            }
 
             if (plugin.id == "content_filter") {
                 val configureButton = Button(this).apply {
