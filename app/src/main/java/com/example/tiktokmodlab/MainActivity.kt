@@ -1,6 +1,9 @@
 package com.example.tiktokmodlab
 
 import android.app.Activity
+import android.content.Intent
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.app.AlertDialog
 import android.os.Bundle
 import android.text.InputType
@@ -42,7 +45,7 @@ class MainActivity : Activity() {
         root.addView(title)
 
         val subtitle = TextView(this).apply {
-            text = "Личная лаборатория плагинов · версия 0.4.0"
+            text = "Личная лаборатория плагинов · версия 0.6.0"
             textSize = 14f
             setTextColor(0xFFB8B8C2.toInt())
             setPadding(0, 8, 0, 12)
@@ -277,17 +280,39 @@ class MainActivity : Activity() {
                             textSize = 13f
                         })
                     }
-                    row.addView(Button(this).apply {
+                    val actions = LinearLayout(this).apply {
+                        orientation = LinearLayout.HORIZONTAL
+                    }
+                    actions.addView(Button(this).apply {
+                        text = "Открыть"
+                        setOnClickListener { openSavedLink(item.url) }
+                    })
+                    actions.addView(Button(this).apply {
+                        text = "Поделиться"
+                        setOnClickListener { shareSavedLink(item.url) }
+                    })
+                    actions.addView(Button(this).apply {
+                        text = "Копировать"
+                        setOnClickListener { copySavedLink(item.url) }
+                    })
+                    actions.addView(Button(this).apply {
                         text = "Удалить"
                         setOnClickListener {
                             saveHelper.remove(index)
                             refreshList()
                         }
                     })
+                    row.addView(actions)
                     entries.addView(row)
                 }
             }
         }
+
+        val exportButton = Button(this).apply {
+            text = "Экспортировать резервную копию"
+            setOnClickListener { exportSavedLinks() }
+        }
+        content.addView(exportButton)
 
         addButton.setOnClickListener {
             val url = urlInput.text.toString().trim()
@@ -309,6 +334,81 @@ class MainActivity : Activity() {
             .setView(scroll)
             .setPositiveButton("Готово", null)
             .show()
+    }
+
+
+    private fun openSavedLink(url: String) {
+        try {
+            startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(url)))
+        } catch (_: Exception) {
+            Toast.makeText(this, "Не удалось открыть ссылку", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun shareSavedLink(url: String) {
+        val intent = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_TEXT, url)
+        }
+        startActivity(Intent.createChooser(intent, "Поделиться ссылкой"))
+    }
+
+    private fun copySavedLink(url: String) {
+        val clipboard = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
+        clipboard.setPrimaryClip(ClipData.newPlainText("TikTok link", url))
+        Toast.makeText(this, "Ссылка скопирована", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun exportSavedLinks() {
+        val items = saveHelper.all()
+        if (items.isEmpty()) {
+            Toast.makeText(this, "Список пока пуст", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val backup = buildString {
+            appendLine("TikTok Mod Lab — резервная копия ссылок")
+            appendLine()
+            items.forEachIndexed { index, item ->
+                appendLine("${index + 1}. ${item.url}")
+                if (item.note.isNotBlank()) appendLine("Заметка: ${item.note}")
+                appendLine()
+            }
+        }
+        val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
+            addCategory(Intent.CATEGORY_OPENABLE)
+            type = "text/plain"
+            putExtra(Intent.EXTRA_TITLE, "tiktok-mod-lab-links-backup.txt")
+        }
+        pendingBackupText = backup
+        try {
+            startActivityForResult(intent, REQUEST_CREATE_BACKUP)
+        } catch (_: Exception) {
+            pendingBackupText = null
+            Toast.makeText(this, "Не удалось открыть сохранение файла", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private var pendingBackupText: String? = null
+
+    @Deprecated("Deprecated in Android API; retained for broad device compatibility")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode != REQUEST_CREATE_BACKUP) return
+        val text = pendingBackupText
+        pendingBackupText = null
+        if (resultCode != RESULT_OK || data?.data == null || text == null) return
+        try {
+            contentResolver.openOutputStream(data.data!!)?.bufferedWriter(Charsets.UTF_8)?.use {
+                it.write(text)
+            }
+            Toast.makeText(this, "Резервная копия сохранена", Toast.LENGTH_LONG).show()
+        } catch (_: Exception) {
+            Toast.makeText(this, "Не удалось сохранить резервную копию", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    companion object {
+        private const val REQUEST_CREATE_BACKUP = 4107
     }
 
     private fun updateStatus() {
