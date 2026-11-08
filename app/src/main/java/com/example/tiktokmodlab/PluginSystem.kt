@@ -30,8 +30,8 @@ object PluginRegistry {
         PluginDefinition(
             id = "save_helper",
             title = "Помощник сохранения",
-            description = "Подсказки о доступных и разрешённых способах сохранения.",
-            implemented = false
+            description = "Сохраняет ссылки на видео и заметки локально внутри Mod Lab.",
+            implemented = true
         ),
         PluginDefinition(
             id = "theme",
