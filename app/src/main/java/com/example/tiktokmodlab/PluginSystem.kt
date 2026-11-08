@@ -24,8 +24,8 @@ object PluginRegistry {
         PluginDefinition(
             id = "content_filter",
             title = "Фильтр контента",
-            description = "Заготовка для пользовательских фильтров.",
-            implemented = false
+            description = "Список нежелательных слов и локальная проверка текста.",
+            implemented = true
         ),
         PluginDefinition(
             id = "save_helper",
