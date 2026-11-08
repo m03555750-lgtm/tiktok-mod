@@ -11,8 +11,8 @@ android {
         applicationId = "com.example.tiktokmodlab"
         minSdk = 26
         targetSdk = 36
-        versionCode = 3
-        versionName = "0.6.0"
+        versionCode = 4
+        versionName = "0.7.0"
     }
 
     buildFeatures {
@@ -27,4 +27,9 @@ android {
     kotlinOptions {
         jvmTarget = "17"
     }
+}
+
+dependencies {
+    implementation("androidx.media3:media3-exoplayer:1.5.1")
+    implementation("androidx.media3:media3-ui:1.5.1")
 }
