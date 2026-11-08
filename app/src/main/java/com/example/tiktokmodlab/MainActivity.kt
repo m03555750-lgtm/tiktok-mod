@@ -13,17 +13,21 @@ import android.widget.Toast
 data class Plugin(
     val id: String,
     val title: String,
-    val description: String,
-    var enabled: Boolean = false
+    val description: String
 )
 
 class MainActivity : Activity() {
-    private val plugins = mutableListOf(
-        Plugin("player_controls", "Дополнительные настройки плеера", "Демонстрационный переключатель настроек воспроизведения."),
-        Plugin("content_filter", "Фильтр контента", "Макет будущих пользовательских фильтров."),
-        Plugin("save_helper", "Помощник сохранения", "Показывает только разрешённые способы сохранения контента."),
-        Plugin("theme", "Оформление", "Настройки внешнего вида самого приложения.")
+    private val plugins = listOf(
+        Plugin("player_controls", "Дополнительные настройки плеера", "Раздел для будущих локальных настроек воспроизведения."),
+        Plugin("content_filter", "Фильтр контента", "Заготовка для пользовательских фильтров контента."),
+        Plugin("save_helper", "Помощник сохранения", "Подсказки о доступных и разрешённых способах сохранения."),
+        Plugin("theme", "Оформление", "Настройки внешнего вида TikTok Mod Lab.")
     )
+
+    private val preferences by lazy {
+        getSharedPreferences("plugin_settings", MODE_PRIVATE)
+    }
+    private lateinit var status: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -43,15 +47,22 @@ class MainActivity : Activity() {
         root.addView(title)
 
         val subtitle = TextView(this).apply {
-            text = "Личная лаборатория плагинов · версия 0.1.0"
+            text = "Личная лаборатория плагинов · версия 0.2.0"
             textSize = 14f
             setTextColor(0xFFB8B8C2.toInt())
-            setPadding(0, 8, 0, 24)
+            setPadding(0, 8, 0, 12)
         }
         root.addView(subtitle)
 
+        status = TextView(this).apply {
+            textSize = 14f
+            setTextColor(0xFF8FE3A1.toInt())
+            setPadding(0, 0, 0, 16)
+        }
+        root.addView(status)
+
         val warning = TextView(this).apply {
-            text = "Это отдельное приложение-компаньон. Оно не изменяет APK TikTok, не встраивается в него и пока содержит демонстрационные плагины."
+            text = "Это отдельное приложение-компаньон. Переключатели сохраняют настройки внутри Mod Lab и пока не изменяют официальный TikTok."
             textSize = 14f
             setTextColor(0xFFFFD27A.toInt())
             setPadding(14, 14, 14, 14)
@@ -76,12 +87,13 @@ class MainActivity : Activity() {
                 text = plugin.title
                 textSize = 17f
                 setTextColor(0xFFFFFFFF.toInt())
-                isChecked = plugin.enabled
+                isChecked = preferences.getBoolean(plugin.id, false)
                 setOnCheckedChangeListener { _, checked ->
-                    plugin.enabled = checked
+                    preferences.edit().putBoolean(plugin.id, checked).apply()
+                    updateStatus()
                     Toast.makeText(
                         this@MainActivity,
-                        if (checked) "Плагин включён (демо)" else "Плагин выключен",
+                        if (checked) "Настройка включена и сохранена" else "Настройка выключена и сохранена",
                         Toast.LENGTH_SHORT
                     ).show()
                 }
@@ -114,5 +126,11 @@ class MainActivity : Activity() {
         )
 
         setContentView(root)
+        updateStatus()
+    }
+
+    private fun updateStatus() {
+        val enabledCount = plugins.count { preferences.getBoolean(it.id, false) }
+        status.text = "Плагины включены: $enabledCount из ${plugins.size}"
     }
 }
