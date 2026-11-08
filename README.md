@@ -1,17 +1,21 @@
 # TikTok Mod Lab
 
-A personal Android prototype for experimenting with a plugin-style companion app.
+A personal Android companion app for experimenting with a local plugin system.
 
-## Current scope
+## Current features
 
-- Android application shell.
-- Russian-language plugin list with enable/disable switches.
-- Demonstration plugins only; switches do not modify TikTok.
-- No TikTok account credentials, session cookies, or private API access are collected.
+- Russian-language interface.
+- Central plugin catalog in `PluginRegistry`.
+- `PluginManager` for reading and saving plugin states locally.
+- Plugin switches persist after the app is restarted.
+- First working local plugin: **Тема Mod Lab**, which changes the companion app's appearance.
+- Other catalog entries are clearly marked as upcoming prototypes.
 
 ## Important boundary
 
-This project is a separate companion app. It does not patch, inject into, repackage, or bypass protections in the official TikTok app. Any future TikTok integration must use documented, authorized interfaces and respect platform terms.
+This is a separate companion app. It does not patch, inject into, repackage, or bypass protections in the official TikTok app. Plugin functionality currently runs only inside Mod Lab. No TikTok account credentials, session cookies, or private API access are collected.
+
+Any future TikTok integration must use documented, authorized interfaces and respect platform terms.
 
 ## Build
 
